@@ -12,7 +12,7 @@ export async function logActivity(
         action,
         entityType: opts?.entityType ?? null,
         entityId: opts?.entityId ?? null,
-        meta: opts?.meta ?? undefined,
+        meta: opts?.meta ? (opts.meta as object) : undefined,
         ipAddress: opts?.ipAddress ?? null,
       },
     });
