@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 3001",
-    "build": "prisma db push --accept-data-loss && next build",
+    "build": "prisma db push --accept-data-loss || echo 'WARNING: prisma db push failed, continuing build' && next build",
     "start": "next start --port 3001",
     "lint": "next lint",
     "db:push": "prisma db push",
