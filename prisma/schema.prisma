@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  role         String   @default("agent")
+  passwordHash String   @map("password_hash")
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  closures ClosureForm[]
+  logs     ActivityLog[]
+
+  @@map("users")
+}
+
+model ClosureForm {
+  id String @id @default(cuid())
+
+  quoteS3Key  String @unique @map("quote_s3_key")
+  quoteNumber String @map("quote_number")
+
+  // Customer details (pre-filled from quote)
+  customerName    String  @map("customer_name")
+  customerEmail   String? @map("customer_email")
+  customerPhone   String  @map("customer_phone")
+  customerAddress String  @db.Text @map("customer_address")
+  customerTin     String? @map("customer_tin")
+
+  // Utility info
+  customerAccountNo String? @map("customer_account_no")
+  customerBillId    String? @map("customer_bill_id")
+  utilityName       String? @map("utility_name") // STELCO | FENAKA
+
+  // System from original quote
+  systemKwp    Float  @map("system_kwp")
+  gridPlan     String @map("grid_plan")
+  selectedPlan String @map("selected_plan")
+
+  // Utility email flow
+  utilityEmailSentAt DateTime? @map("utility_email_sent_at")
+  utilityEmailStatus String    @default("pending") @map("utility_email_status") // pending | sent | replied
+  maxKwpFromUtility  Float?    @map("max_kwp_from_utility")
+  utilityRepliedAt   DateTime? @map("utility_replied_at")
+  utilityNotes       String?   @db.Text @map("utility_notes")
+
+  // Final invoice
+  approvedKwp        Float?    @map("approved_kwp")
+  freightType        String?   @map("freight_type") // 20ft | 40ft
+  finalPriceMvr      Float?    @map("final_price_mvr")
+  invoiceS3Key       String?   @map("invoice_s3_key")
+  invoiceNumber      String?   @map("invoice_number")
+  invoiceGeneratedAt DateTime? @map("invoice_generated_at")
+
+  // status: new | utility_requested | capacity_received | invoiced | closed
+  status    String   @default("new")
+  notes     String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String   @map("created_by")
+
+  user User @relation(fields: [createdBy], references: [id])
+
+  @@map("closure_forms")
+}
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  action     String
+  entityType String?  @map("entity_type")
+  entityId   String?  @map("entity_id")
+  meta       Json?
+  ipAddress  String?  @map("ip_address")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("activity_logs")
+}
