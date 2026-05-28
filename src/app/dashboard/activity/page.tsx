@@ -37,7 +37,24 @@ export default function ActivityPage() {
         </button>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+      {/* Mobile cards */}
+      <div className="space-y-2 md:hidden">
+        {loading ? (
+          <div className="rounded-lg border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-400">Loading…</div>
+        ) : logs.map((l) => (
+          <div key={l.id} className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <span className="rounded bg-gray-100 px-2 py-0.5 font-mono text-xs text-gray-700">{l.action}</span>
+              <span className="text-xs text-gray-400">{new Date(l.createdAt).toLocaleString("en-GB")}</span>
+            </div>
+            <p className="text-sm font-medium text-gray-700">{l.user.name}</p>
+            {l.entityType && <p className="text-xs text-gray-400">{l.entityType}</p>}
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm md:block">
         <table className="w-full text-sm">
           <thead className="border-b border-gray-200 bg-gray-50 text-xs font-medium text-gray-500">
             <tr>
@@ -58,9 +75,7 @@ export default function ActivityPage() {
                 </td>
                 <td className="px-4 py-2.5 text-xs text-gray-700">{l.user.name}</td>
                 <td className="px-4 py-2.5 font-mono text-xs text-gray-800">{l.action}</td>
-                <td className="px-4 py-2.5 text-xs text-gray-500">
-                  {l.entityType ? `${l.entityType}` : "—"}
-                </td>
+                <td className="px-4 py-2.5 text-xs text-gray-500">{l.entityType ?? "—"}</td>
                 <td className="px-4 py-2.5 text-xs text-gray-400">{l.ipAddress ?? "—"}</td>
               </tr>
             ))}

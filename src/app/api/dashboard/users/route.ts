@@ -96,7 +96,18 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: "Cannot delete the last admin" }, { status: 400 });
   }
 
-  await prisma.user.delete({ where: { id } });
+  const closureCount = await prisma.closureForm.count({ where: { createdBy: id } });
+  if (closureCount > 0) {
+    return NextResponse.json(
+      { error: `Cannot delete: user has ${closureCount} closure record(s). Deactivate instead.` },
+      { status: 400 }
+    );
+  }
+
+  await prisma.$transaction([
+    prisma.activityLog.deleteMany({ where: { userId: id } }),
+    prisma.user.delete({ where: { id } }),
+  ]);
 
   await logActivity(session.user.id, "delete_user", {
     entityType: "user", entityId: id, ipAddress: getClientIp(req),

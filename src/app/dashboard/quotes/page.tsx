@@ -43,6 +43,29 @@ function ViewPdfButton({ quoteId }: { quoteId: string }) {
   );
 }
 
+function QuoteActions({ q }: { q: QuoteRow }) {
+  return (
+    <div className="flex items-center gap-3">
+      <ViewPdfButton quoteId={q.quoteId} />
+      {q.closureId ? (
+        <Link
+          href={`/dashboard/closure/${q.closureId}`}
+          className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-[#73a638] hover:underline"
+        >
+          Open Closure <ChevronRight size={12} />
+        </Link>
+      ) : (
+        <Link
+          href={`/dashboard/quotes/${q.quoteId}`}
+          className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-blue-600 hover:underline"
+        >
+          Start Closure <ChevronRight size={12} />
+        </Link>
+      )}
+    </div>
+  );
+}
+
 export default function QuotesPage() {
   const [quotes, setQuotes] = useState<QuoteRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,7 +109,32 @@ export default function QuotesPage() {
         </div>
       )}
 
-      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+      {/* Mobile cards */}
+      <div className="space-y-3 md:hidden">
+        {loading ? (
+          <div className="rounded-lg border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-400">Loading quotes…</div>
+        ) : quotes.length === 0 ? (
+          <div className="rounded-lg border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-400">No quotes found</div>
+        ) : quotes.map((q) => (
+          <div key={q.s3Key} className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 flex items-start justify-between gap-2">
+              <div>
+                <p className="font-medium text-gray-800">{q.customerName || "—"}</p>
+                <p className="text-xs text-gray-400">{q.customerPhone || "—"}</p>
+              </div>
+              <StatusBadge status={q.closureStatus} />
+            </div>
+            <div className="mb-3 flex items-center justify-between text-xs text-gray-500">
+              <span className="font-mono">{q.quoteNumber || "—"}</span>
+              <span>{q.lastModified ? new Date(q.lastModified).toLocaleDateString("en-GB") : "—"}</span>
+            </div>
+            <QuoteActions q={q} />
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm md:block">
         <table className="w-full text-sm">
           <thead className="border-b border-gray-200 bg-gray-50 text-xs font-medium text-gray-500">
             <tr>
@@ -100,52 +148,23 @@ export default function QuotesPage() {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
-              <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
-                  Loading quotes…
-                </td>
-              </tr>
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">Loading quotes…</td></tr>
             ) : quotes.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
-                  No quotes found
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">No quotes found</td></tr>
+            ) : quotes.map((q) => (
+              <tr key={q.s3Key} className="hover:bg-gray-50">
+                <td className="px-4 py-3 font-mono text-xs text-gray-600">{q.quoteNumber || "—"}</td>
+                <td className="px-4 py-3 font-medium text-gray-800">{q.customerName || "—"}</td>
+                <td className="px-4 py-3 text-gray-600">{q.customerPhone || "—"}</td>
+                <td className="px-4 py-3 text-gray-500">
+                  {q.lastModified ? new Date(q.lastModified).toLocaleDateString("en-GB") : "—"}
+                </td>
+                <td className="px-4 py-3"><StatusBadge status={q.closureStatus} /></td>
+                <td className="px-4 py-3 text-right">
+                  <QuoteActions q={q} />
                 </td>
               </tr>
-            ) : (
-              quotes.map((q) => (
-                <tr key={q.s3Key} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-xs text-gray-600">{q.quoteNumber || "—"}</td>
-                  <td className="px-4 py-3 font-medium text-gray-800">{q.customerName || "—"}</td>
-                  <td className="px-4 py-3 text-gray-600">{q.customerPhone || "—"}</td>
-                  <td className="px-4 py-3 text-gray-500">
-                    {q.lastModified ? new Date(q.lastModified).toLocaleDateString("en-GB") : "—"}
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={q.closureStatus} />
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-3">
-                      <ViewPdfButton quoteId={q.quoteId} />
-                      {q.closureId ? (
-                        <Link
-                          href={`/dashboard/closure/${q.closureId}`}
-                          className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-[#73a638] hover:underline"
-                        >
-                          Open Closure <ChevronRight size={12} />
-                        </Link>
-                      ) : (
-                        <Link
-                          href={`/dashboard/quotes/${q.quoteId}`}
-                          className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-blue-600 hover:underline"
-                        >
-                          Start Closure <ChevronRight size={12} />
-                        </Link>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
+            ))}
           </tbody>
         </table>
       </div>

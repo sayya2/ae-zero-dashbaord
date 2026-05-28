@@ -154,7 +154,56 @@ export default function UsersPage() {
         </form>
       )}
 
-      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+      {/* Mobile cards */}
+      <div className="space-y-3 md:hidden">
+        {loading ? (
+          <div className="rounded-lg border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-400">Loading…</div>
+        ) : users.map((u) => (
+          <div key={u.id} className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-3 flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2">
+                {u.role === "admin"
+                  ? <ShieldCheck size={15} className="text-[#73a638]" />
+                  : <User size={15} className="text-gray-400" />}
+                <div>
+                  <p className="font-medium text-gray-800">{u.name}</p>
+                  <p className="text-xs text-gray-400">{u.email}</p>
+                </div>
+              </div>
+              <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${u.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                {u.active ? "Active" : "Inactive"}
+              </span>
+            </div>
+            <div className="mb-3 flex items-center gap-3">
+              <select
+                value={u.role}
+                onChange={(e) => changeRole(u.id, e.target.value)}
+                className="rounded border border-gray-200 bg-transparent px-2 py-1 text-xs text-gray-600 focus:border-[#73a638] focus:outline-none"
+              >
+                <option value="agent">Agent</option>
+                <option value="admin">Admin</option>
+              </select>
+              <span className="text-xs text-gray-400">Joined {new Date(u.createdAt).toLocaleDateString("en-GB")}</span>
+            </div>
+            <div className="flex items-center gap-3 border-t border-gray-100 pt-3">
+              <button onClick={() => toggleActive(u.id, !u.active)} className="text-xs text-gray-500 hover:text-gray-800 underline">
+                {u.active ? "Deactivate" : "Activate"}
+              </button>
+              <button onClick={() => { setResetTarget(u); setNewPassword(""); setResetErr(""); }}
+                className="flex items-center gap-1 rounded p-1 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-700">
+                <KeyRound size={13} /> Reset pw
+              </button>
+              <button onClick={() => setDeleteTarget(u)}
+                className="ml-auto flex items-center gap-1 rounded p-1 text-xs text-gray-400 hover:bg-red-50 hover:text-red-600">
+                <Trash2 size={13} /> Delete
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm md:block">
         <table className="w-full text-sm">
           <thead className="border-b border-gray-200 bg-gray-50 text-xs font-medium text-gray-500">
             <tr>

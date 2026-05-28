@@ -21,6 +21,10 @@ interface ClosureRow {
 }
 
 const fmt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+const STATUS_LABELS: Record<string, string> = {
+  all: "All", new: "New", utility_requested: "Utility Req.",
+  capacity_received: "Capacity Rcvd", invoiced: "Invoiced", closed: "Closed",
+};
 
 export default function ClosuresPage() {
   const [closures, setClosures] = useState<ClosureRow[]>([]);
@@ -55,7 +59,7 @@ export default function ClosuresPage() {
         </button>
       </div>
 
-      <div className="mb-4 flex gap-1 overflow-x-auto">
+      <div className="mb-4 flex gap-1.5 overflow-x-auto pb-1">
         {statuses.map((s) => (
           <button
             key={s}
@@ -64,12 +68,61 @@ export default function ClosuresPage() {
               filter === s ? "bg-[#73a638] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
-            {s === "all" ? "All" : s.replace(/_/g, " ")}
+            {STATUS_LABELS[s] ?? s}
           </button>
         ))}
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+      {/* Mobile cards */}
+      <div className="space-y-3 md:hidden">
+        {loading ? (
+          <div className="rounded-lg border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-400">Loading…</div>
+        ) : closures.length === 0 ? (
+          <div className="rounded-lg border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-400">No closures found</div>
+        ) : closures.map((c) => (
+          <div key={c.id} className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 flex items-start justify-between gap-2">
+              <div>
+                <p className="font-medium text-gray-800">{c.customerName}</p>
+                <p className="text-xs text-gray-400">{c.customerPhone}</p>
+              </div>
+              <StatusBadge status={c.status} />
+            </div>
+            <div className="mb-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+              <span className="text-gray-400">Quote</span>
+              <span className="font-mono text-gray-600">{c.quoteNumber || "—"}</span>
+              <span className="text-gray-400">Utility</span>
+              <span className="text-gray-600">{c.utilityName ?? "—"}</span>
+              <span className="text-gray-400">kWp</span>
+              <span className="text-gray-600">{c.approvedKwp ?? c.systemKwp} kWp</span>
+              {c.finalPriceMvr && (
+                <>
+                  <span className="text-gray-400">Total</span>
+                  <span className="font-medium text-gray-700">MVR {fmt.format(c.finalPriceMvr)}</span>
+                </>
+              )}
+              {c.invoiceNumber && (
+                <>
+                  <span className="text-gray-400">Invoice</span>
+                  <span className="font-mono text-gray-600">{c.invoiceNumber}</span>
+                </>
+              )}
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-400">{c.user?.name ?? "—"}</span>
+              <Link
+                href={`/dashboard/closure/${c.id}`}
+                className="inline-flex items-center gap-1 text-xs font-medium text-[#73a638] hover:underline"
+              >
+                Open <ChevronRight size={12} />
+              </Link>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm md:block">
         <table className="w-full text-sm">
           <thead className="border-b border-gray-200 bg-gray-50 text-xs font-medium text-gray-500">
             <tr>
@@ -89,36 +142,34 @@ export default function ClosuresPage() {
               <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">Loading…</td></tr>
             ) : closures.length === 0 ? (
               <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">No closures found</td></tr>
-            ) : (
-              closures.map((c) => (
-                <tr key={c.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-xs text-gray-600">{c.quoteNumber || "—"}</td>
-                  <td className="px-4 py-3">
-                    <p className="font-medium text-gray-800">{c.customerName}</p>
-                    <p className="text-xs text-gray-400">{c.customerPhone}</p>
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">{c.utilityName ?? "—"}</td>
-                  <td className="px-4 py-3 text-gray-600">
-                    {c.approvedKwp ? `${c.approvedKwp}` : `${c.systemKwp}`}
-                    <span className="text-xs text-gray-400"> kWp</span>
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs text-gray-600">{c.invoiceNumber ?? "—"}</td>
-                  <td className="px-4 py-3 text-gray-700">
-                    {c.finalPriceMvr ? `MVR ${fmt.format(c.finalPriceMvr)}` : "—"}
-                  </td>
-                  <td className="px-4 py-3"><StatusBadge status={c.status} /></td>
-                  <td className="px-4 py-3 text-xs text-gray-500">{c.user?.name ?? "—"}</td>
-                  <td className="px-4 py-3 text-right">
-                    <Link
-                      href={`/dashboard/closure/${c.id}`}
-                      className="inline-flex items-center gap-1 text-xs font-medium text-[#73a638] hover:underline"
-                    >
-                      Open <ChevronRight size={12} />
-                    </Link>
-                  </td>
-                </tr>
-              ))
-            )}
+            ) : closures.map((c) => (
+              <tr key={c.id} className="hover:bg-gray-50">
+                <td className="px-4 py-3 font-mono text-xs text-gray-600">{c.quoteNumber || "—"}</td>
+                <td className="px-4 py-3">
+                  <p className="font-medium text-gray-800">{c.customerName}</p>
+                  <p className="text-xs text-gray-400">{c.customerPhone}</p>
+                </td>
+                <td className="px-4 py-3 text-gray-600">{c.utilityName ?? "—"}</td>
+                <td className="px-4 py-3 text-gray-600">
+                  {c.approvedKwp ? `${c.approvedKwp}` : `${c.systemKwp}`}
+                  <span className="text-xs text-gray-400"> kWp</span>
+                </td>
+                <td className="px-4 py-3 font-mono text-xs text-gray-600">{c.invoiceNumber ?? "—"}</td>
+                <td className="px-4 py-3 text-gray-700">
+                  {c.finalPriceMvr ? `MVR ${fmt.format(c.finalPriceMvr)}` : "—"}
+                </td>
+                <td className="px-4 py-3"><StatusBadge status={c.status} /></td>
+                <td className="px-4 py-3 text-xs text-gray-500">{c.user?.name ?? "—"}</td>
+                <td className="px-4 py-3 text-right">
+                  <Link
+                    href={`/dashboard/closure/${c.id}`}
+                    className="inline-flex items-center gap-1 text-xs font-medium text-[#73a638] hover:underline"
+                  >
+                    Open <ChevronRight size={12} />
+                  </Link>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
