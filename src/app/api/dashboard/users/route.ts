@@ -50,12 +50,18 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { id, active, role } = await req.json();
+  const { id, active, role, password } = await req.json();
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
   const data: Record<string, unknown> = {};
   if (typeof active === "boolean") data.active = active;
   if (role) data.role = role === "admin" ? "admin" : "agent";
+  if (password) {
+    if (password.length < 8) {
+      return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 });
+    }
+    data.passwordHash = await bcrypt.hash(password, 12);
+  }
 
   const user = await prisma.user.update({
     where: { id },
@@ -63,10 +69,39 @@ export async function PATCH(req: Request) {
     select: { id: true, email: true, name: true, role: true, active: true },
   });
 
-  await logActivity(session.user.id, "update_user", {
+  await logActivity(session.user.id, password ? "reset_password" : "update_user", {
     entityType: "user", entityId: id, ipAddress: getClientIp(req),
-    meta: { changes: data },
+    meta: password ? { targetEmail: user.email } : { changes: data },
   });
 
   return NextResponse.json({ user });
+}
+
+export async function DELETE(req: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "admin") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const { id } = await req.json();
+  if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+  if (id === session.user.id) {
+    return NextResponse.json({ error: "Cannot delete your own account" }, { status: 400 });
+  }
+
+  const adminCount = await prisma.user.count({ where: { role: "admin", active: true } });
+  const target = await prisma.user.findUnique({ where: { id }, select: { role: true, email: true } });
+  if (!target) return NextResponse.json({ error: "User not found" }, { status: 404 });
+  if (target.role === "admin" && adminCount <= 1) {
+    return NextResponse.json({ error: "Cannot delete the last admin" }, { status: 400 });
+  }
+
+  await prisma.user.delete({ where: { id } });
+
+  await logActivity(session.user.id, "delete_user", {
+    entityType: "user", entityId: id, ipAddress: getClientIp(req),
+    meta: { email: target.email },
+  });
+
+  return NextResponse.json({ ok: true });
 }
