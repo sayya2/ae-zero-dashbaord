@@ -1,6 +1,4 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
-import fs from "fs/promises";
-import path from "path";
 
 const fmt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 const mvr = (v?: number) => (v === undefined || v === null ? "-" : `MVR ${fmt.format(v)}`);
@@ -124,14 +122,15 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
 
-  // ── Logo (top-left) ─────────────────────────────────────────────────
+  // ── Logo (top-left) — skipped if file unavailable ───────────────────
   try {
-    const logoPath = path.join(process.cwd(), "public", "logo.png");
-    const logoBytes = await fs.readFile(logoPath);
+    const { readFile } = await import("fs/promises");
+    const { join } = await import("path");
+    const logoBytes = await readFile(join(process.cwd(), "public", "logo.png"));
     const img = await doc.embedPng(logoBytes);
     const scale = Math.min(110 / img.width, 50 / img.height);
     page.drawImage(img, { x: 50, y: height - 70 - img.height * scale, width: img.width * scale, height: img.height * scale });
-  } catch { /* logo optional */ }
+  } catch { /* logo is optional */ }
 
   // ── Company info (top-right) ─────────────────────────────────────────
   const compTop = height - 50;
