@@ -48,6 +48,7 @@ export async function POST(req: Request) {
     },
     system: { kwp: Number(approvedKwp), gridPlan: closure.gridPlan, freightType },
     pricing,
+    plan: { selectedPlan: closure.selectedPlan },
     company,
   });
 
